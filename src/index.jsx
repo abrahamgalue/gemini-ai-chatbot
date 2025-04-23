@@ -8,6 +8,11 @@ const surpriseOptions = [
   'Who do you make a BLT sandwitch?',
 ]
 
+const CHATBOT_URL =
+  import.meta.env.MODE === 'production'
+    ? import.meta.env.VITE_API_URL
+    : 'http://localhost:3000/gemini'
+
 export function App() {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -35,7 +40,7 @@ export function App() {
           'Content-Type': 'application/json',
         },
       }
-      const res = await fetch('http://localhost:8000/gemini', options)
+      const res = await fetch(CHATBOT_URL, options)
       const data = await res.text()
       setChatHistory((oldChatHistory) => [
         ...oldChatHistory,
