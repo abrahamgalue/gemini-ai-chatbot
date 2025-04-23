@@ -1,42 +1,97 @@
-import { hydrate, prerender as ssr } from 'preact-iso'
-
-import preactLogo from './assets/preact.svg'
 import './style.css'
+import { hydrate, prerender as ssr } from 'preact-iso'
+import { useState } from 'preact/hooks'
+
+const surpriseOptions = [
+  'Who won the latest Novel Peace Prize?',
+  'Where does pizza come from?',
+  'Who do you make a BLT sandwitch?',
+]
 
 export function App() {
-  return (
-    <div>
-      <a href='https://preactjs.com' target='_blank' rel='noreferrer'>
-        <img src={preactLogo} alt='Preact logo' height='160' width='160' />
-      </a>
-      <h1>Get Started building Vite-powered Preact Apps</h1>
-      <section>
-        <Resource
-          title='Learn Preact'
-          description="If you're new to Preact, try the interactive tutorial to learn important concepts"
-          href='https://preactjs.com/tutorial'
-        />
-        <Resource
-          title='Differences to React'
-          description="If you're coming from React, you may want to check out our docs to see where Preact differs"
-          href='https://preactjs.com/guide/v10/differences-to-react'
-        />
-        <Resource
-          title='Learn Vite'
-          description='To learn more about Vite and how you can customize it to fit your needs, take a look at their excellent documentation'
-          href='https://vitejs.dev'
-        />
-      </section>
-    </div>
-  )
-}
+  const [value, setValue] = useState('')
+  const [error, setError] = useState('')
+  const [chatHistory, setChatHistory] = useState([])
 
-function Resource(props) {
+  const surprise = () => {
+    const randomValue =
+      surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)]
+    setValue(randomValue)
+  }
+
+  const getResponse = async () => {
+    if (!value) {
+      setError('Error! Please ask a question!')
+      return
+    }
+    try {
+      const options = {
+        method: 'POST',
+        body: JSON.stringify({
+          history: chatHistory,
+          message: value,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+      const res = await fetch('http://localhost:8000/gemini', options)
+      const data = await res.text()
+      setChatHistory((oldChatHistory) => [
+        ...oldChatHistory,
+        {
+          role: 'user',
+          parts: [{ text: value }],
+        },
+        {
+          role: 'model',
+          parts: [{ text: data }],
+        },
+      ])
+      setValue('')
+    } catch (error) {
+      setError('Something went wrong! Please try again later.')
+    }
+  }
+
+  const clear = () => {
+    setValue('')
+    setError('')
+    setChatHistory([])
+  }
+
+  const handleValueChange = (e) => {
+    setValue(e.target.value)
+  }
+
   return (
-    <a href={props.href} target='_blank' class='resource' rel='noreferrer'>
-      <h2>{props.title}</h2>
-      <p>{props.description}</p>
-    </a>
+    <div className='app'>
+      <p>
+        What do you want to know?
+        <button className='surprise' onClick={surprise} disabled={!chatHistory}>
+          Surprise ME
+        </button>
+      </p>
+      <div className='input-container'>
+        <input
+          value={value}
+          placeholder='When is Christmas...?'
+          onChange={handleValueChange}
+        />
+        {!error && <button onClick={getResponse}>Ask me</button>}
+        {error && <button onClick={clear}>Clear</button>}
+      </div>
+      {error && <p>{error}</p>}
+      <div className='search-result'>
+        {chatHistory.map((chatItem, _index) => (
+          <div key={_index}>
+            <p className='answer'>
+              {chatItem.role} : {chatItem.parts[0].text}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
