@@ -1,7 +1,7 @@
 import './style.css'
 import { hydrate, prerender as ssr } from 'preact-iso'
 import { useState } from 'preact/hooks'
-import Markdown from 'react-markdown'
+import { Suspense, lazy } from 'preact/compat'
 
 const surpriseOptions = [
   'Who won the latest Novel Peace Prize?',
@@ -13,6 +13,11 @@ const CHATBOT_URL =
   import.meta.env.MODE === 'production'
     ? import.meta.env.VITE_API_URL
     : 'http://localhost:3000/gemini'
+
+let Markdown
+if (typeof window !== 'undefined') {
+  Markdown = lazy(() => import('react-markdown'))
+}
 
 export function App() {
   const [value, setValue] = useState('')
@@ -60,10 +65,6 @@ export function App() {
     setChatHistory([])
   }
 
-  const handleValueChange = (e) => {
-    setValue(e.target.value)
-  }
-
   return (
     <div className='app'>
       <h1 className='title'>ChatBot AI</h1>
@@ -76,7 +77,13 @@ export function App() {
               chatItem.role === 'user' ? 'user' : 'model'
             }`}
           >
-            <Markdown>{chatItem.parts[0].text}</Markdown>
+            {typeof window !== 'undefined' && Markdown ? (
+              <Suspense fallback={<span>Loading...</span>}>
+                <Markdown>{chatItem.parts[0].text}</Markdown>
+              </Suspense>
+            ) : (
+              chatItem.parts[0].text
+            )}
           </div>
         ))}
       </div>
@@ -100,7 +107,7 @@ export function App() {
           <input
             value={value}
             placeholder='When is Christmas...?'
-            onChange={handleValueChange}
+            onInput={(e) => setValue(e.currentTarget.value)}
           />
           {!error ? (
             <button onClick={getResponse}>Submit</button>
@@ -108,9 +115,8 @@ export function App() {
             <button onClick={clear}>Clear</button>
           )}
         </div>
+        {error && <p className='error'>{error}</p>}
       </div>
-
-      {error && <p className='error'>{error}</p>}
     </div>
   )
 }
