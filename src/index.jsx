@@ -1,11 +1,12 @@
 import './style.css'
 import { hydrate, prerender as ssr } from 'preact-iso'
 import { useState } from 'preact/hooks'
+import Markdown from 'react-markdown'
 
 const surpriseOptions = [
   'Who won the latest Novel Peace Prize?',
   'Where does pizza come from?',
-  'Who do you make a BLT sandwitch?',
+  'Who do you make a BLT sandwich?',
 ]
 
 const CHATBOT_URL =
@@ -17,12 +18,6 @@ export function App() {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [chatHistory, setChatHistory] = useState([])
-
-  const surprise = () => {
-    const randomValue =
-      surpriseOptions[Math.floor(Math.random() * surpriseOptions.length)]
-    setValue(randomValue)
-  }
 
   const getResponse = async () => {
     if (!value) {
@@ -71,31 +66,51 @@ export function App() {
 
   return (
     <div className='app'>
-      <p>
-        What do you want to know?
-        <button className='surprise' onClick={surprise} disabled={!chatHistory}>
-          Surprise ME
-        </button>
-      </p>
-      <div className='input-container'>
-        <input
-          value={value}
-          placeholder='When is Christmas...?'
-          onChange={handleValueChange}
-        />
-        {!error && <button onClick={getResponse}>Ask me</button>}
-        {error && <button onClick={clear}>Clear</button>}
-      </div>
-      {error && <p>{error}</p>}
+      <h1 className='title'>ChatBot AI</h1>
+
       <div className='search-result'>
         {chatHistory.map((chatItem, _index) => (
-          <div key={_index}>
-            <p className='answer'>
-              {chatItem.role} : {chatItem.parts[0].text}
-            </p>
+          <div
+            key={_index}
+            className={`chat-bubble ${
+              chatItem.role === 'user' ? 'user' : 'model'
+            }`}
+          >
+            <Markdown>{chatItem.parts[0].text}</Markdown>
           </div>
         ))}
       </div>
+
+      <div className='input-wrapper'>
+        {chatHistory.length === 0 && (
+          <div className='suggestions'>
+            {surpriseOptions.map((option, index) => (
+              <button
+                key={index}
+                className='suggestion'
+                onClick={() => setValue(option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className='input-container'>
+          <input
+            value={value}
+            placeholder='When is Christmas...?'
+            onChange={handleValueChange}
+          />
+          {!error ? (
+            <button onClick={getResponse}>Submit</button>
+          ) : (
+            <button onClick={clear}>Clear</button>
+          )}
+        </div>
+      </div>
+
+      {error && <p className='error'>{error}</p>}
     </div>
   )
 }
