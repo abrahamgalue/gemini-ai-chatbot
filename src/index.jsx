@@ -1,8 +1,7 @@
 import './style.css'
 import { hydrate, prerender as ssr } from 'preact-iso'
-import { useState } from 'preact/hooks'
-import { Suspense, lazy } from 'preact/compat'
-import { SendIcon } from './components/Icons'
+import { Suspense, lazy, useState } from 'preact/compat'
+import { SendIcon, WaitIcon } from './components/Icons'
 const Markdown = lazy(() => import('react-markdown'))
 
 const surpriseOptions = [
@@ -18,14 +17,16 @@ const CHATBOT_URL =
 
 export function App() {
   const [value, setValue] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const [chatHistory, setChatHistory] = useState([])
+  const [isPending, setIsPending] = useState(false)
 
   const getResponse = async () => {
     if (!value) {
       setError('Error! Please ask a question!')
       return
     }
+    setIsPending(true)
     try {
       const options = {
         method: 'POST',
@@ -53,6 +54,8 @@ export function App() {
       setValue('')
     } catch (error) {
       setError('Something went wrong! Please try again later.')
+    } finally {
+      setIsPending(false)
     }
   }
 
@@ -73,6 +76,7 @@ export function App() {
             </Suspense>
           </div>
         ))}
+        {isPending && <div>Loading...</div>}
       </div>
 
       <div className='input-wrapper'>
@@ -96,11 +100,18 @@ export function App() {
             placeholder='When is Christmas...?'
             onInput={(e) => setValue(e.currentTarget.value)}
           />
-          <button onClick={getResponse}>
-            <SendIcon />
+          <button
+            onClick={getResponse}
+            disabled={isPending}
+            style={{
+              cursor: isPending ? 'not-allowed' : 'pointer',
+              backgroundColor: isPending ? '#4c4c4c' : null,
+            }}
+          >
+            {isPending ? <WaitIcon /> : <SendIcon />}
           </button>
         </div>
-        {error && <p className='error'>{error}</p>}
+        {error && chatHistory.length === 0 && <p className='error'>{error}</p>}
       </div>
     </div>
   )
