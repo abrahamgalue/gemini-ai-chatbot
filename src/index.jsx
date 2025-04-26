@@ -2,6 +2,7 @@ import './style.css'
 import { hydrate, prerender as ssr } from 'preact-iso'
 import { Suspense, lazy, useState } from 'preact/compat'
 import { SendIcon, WaitIcon } from './components/Icons'
+import { SkeletonModel, SkeletonChat } from './components/Skeletons'
 const Markdown = lazy(() => import('react-markdown'))
 
 const surpriseOptions = [
@@ -71,12 +72,12 @@ export function App() {
               chatItem.role === 'user' ? 'user' : 'model'
             }`}
           >
-            <Suspense fallback={<span>Loading...</span>}>
+            <Suspense fallback={<SkeletonModel />}>
               <Markdown>{chatItem.parts[0].text}</Markdown>
             </Suspense>
           </div>
         ))}
-        {isPending && <div>Loading...</div>}
+        {isPending && <SkeletonChat />}
       </div>
 
       <div className='input-wrapper'>
