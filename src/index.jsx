@@ -12,9 +12,9 @@ const surpriseOptions = [
 ]
 
 const CHATBOT_URL =
-  import.meta.env.MODE === 'production'
-    ? import.meta.env.VITE_API_URL
-    : 'http://localhost:3000/gemini'
+  import.meta.env.VITE_API_URL || 'http://localhost:3000/gemini'
+
+const GENERIC_ERR_MESSAGE = 'Something went wrong! Please try again later.'
 
 export function App() {
   const [value, setValue] = useState('')
@@ -40,7 +40,16 @@ export function App() {
         },
       }
       const res = await fetch(CHATBOT_URL, options)
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+
+        const errorMessage = errorData?.message || GENERIC_ERR_MESSAGE
+        throw new Error(errorMessage)
+      }
+
       const data = await res.text()
+
       setChatHistory((oldChatHistory) => [
         ...oldChatHistory,
         {
@@ -52,9 +61,10 @@ export function App() {
           parts: [{ text: data }],
         },
       ])
+
       setValue('')
     } catch (error) {
-      setError('Something went wrong! Please try again later.')
+      setError(error.message || GENERIC_ERR_MESSAGE)
     } finally {
       setIsPending(false)
     }
